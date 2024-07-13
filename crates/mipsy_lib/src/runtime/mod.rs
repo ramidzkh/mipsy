@@ -36,6 +36,8 @@ pub const SYS14_READ: i32 = 14;
 pub const SYS15_WRITE: i32 = 15;
 pub const SYS16_CLOSE: i32 = 16;
 pub const SYS17_EXIT_STATUS: i32 = 17;
+pub const SYS30_TIME: i32 = 30;
+pub const SYS32_SLEEP: i32 = 32;
 
 pub const SPECIAL: u32 = 0b000000;
 pub const SPECIAL2: u32 = 0b011100;
@@ -433,6 +435,21 @@ impl Runtime {
                         .read_register_uninit(Register::A0.to_u32())
                         .into_option()
                         .unwrap_or(0) as _,
+                },
+                self,
+            ),
+            SYS30_TIME => RuntimeSyscallGuard::Time(Box::new(move |time| {
+                let state = self.timeline.state_mut();
+                state.write_register(Register::A0.to_u32(), time as u32 as _);
+                state.write_register(Register::A1.to_u32(), (time >> 32) as u32 as _);
+                self
+            })),
+            SYS32_SLEEP => RuntimeSyscallGuard::Sleep(
+                SleepArgs {
+                    milliseconds: try_owned_self!(
+                        self,
+                        self.timeline.state().read_register(Register::A0.to_u32())
+                    ) as _,
                 },
                 self,
             ),
@@ -1464,6 +1481,8 @@ pub enum RuntimeSyscallGuard {
     Write(WriteArgs, Box<dyn FnOnce(i32) -> Runtime>),
     Close(CloseArgs, Box<dyn FnOnce(i32) -> Runtime>),
     ExitStatus(ExitStatusArgs, Runtime),
+    Time(Box<dyn FnOnce(u64) -> Runtime>),
+    Sleep(SleepArgs, Runtime),
 
     // other
     Breakpoint(Runtime),
@@ -1520,6 +1539,10 @@ pub struct CloseArgs {
 
 pub struct ExitStatusArgs {
     pub exit_code: i32,
+}
+
+pub struct SleepArgs {
+    pub milliseconds: u32,
 }
 
 pub(self) trait SafeToUninitResult {

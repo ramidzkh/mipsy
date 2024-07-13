@@ -10,6 +10,7 @@ use super::{prompt, TargetWatch};
 use colored::*;
 use mipsy_lib::runtime::{CloseArgs, OpenArgs, ReadArgs, WriteArgs};
 use std::io::Write;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use text_io::try_read;
 
 fn get_input<T>(name: &str, verbose: bool, line: bool) -> T
@@ -303,6 +304,23 @@ pub(crate) fn sys17_exit_status(verbose: bool, val: i32) {
             ),
         );
     }
+}
+
+pub(crate) fn sys30_time(verbose: bool) -> u64 {
+    if verbose {
+        prompt::syscall_nl(30, "time");
+    }
+
+    let value = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
+    value
+}
+
+pub(crate) fn sys32_sleep(verbose: bool, milliseconds: u32) {
+    if verbose {
+        prompt::syscall_nl(32, format!("sleep: {} milliseconds", milliseconds));
+    }
+
+    std::thread::sleep(Duration::from_millis(milliseconds as u64));
 }
 
 pub(crate) fn trap(_verbose: bool) {

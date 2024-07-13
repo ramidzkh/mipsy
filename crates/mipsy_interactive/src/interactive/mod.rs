@@ -500,6 +500,14 @@ impl State {
 
                         runtime_handler::sys17_exit_status(verbose, args.exit_code);
                     }
+                    Time(guard) => {
+                        let value = runtime_handler::sys30_time(verbose);
+                        self.runtime = guard(value);
+                    },
+                    Sleep(args, new_runtime) => {
+                        runtime_handler::sys32_sleep(verbose, args.milliseconds);
+                        self.runtime = new_runtime;
+                    }
                     Breakpoint(new_runtime) => {
                         self.runtime = new_runtime;
                         breakpoint = true;

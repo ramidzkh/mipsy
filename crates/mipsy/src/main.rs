@@ -7,6 +7,7 @@ use std::{
     str::FromStr,
 };
 
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use clap::Parser;
 use colored::Colorize;
 use mipsy_interactive::prompt;
@@ -478,6 +479,13 @@ fn main() {
                             }
                             ExitStatus(args, _new_runtime) => {
                                 std::process::exit(args.exit_code);
+                            }
+                            Time(guard) => {
+                                runtime = guard(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64);
+                            }
+                            Sleep(args, new_runtime) => {
+                                std::thread::sleep(Duration::from_millis(args.milliseconds as u64));
+                                runtime = new_runtime;
                             }
                             Breakpoint(new_runtime) => {
                                 runtime = new_runtime;
